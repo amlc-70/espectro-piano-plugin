@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<!--
+    Generador Musical Espectral - Escala Hexatónica & Piano
+    Copyright (C) 2026 AMLC_70
+
+    Este programa es software libre: puede redistribuirlo y/o modificarlo
+    bajo los términos de la Licencia Pública General de GNU publicada por
+    la Free Software Foundation, ya sea la versión 3 de la Licencia, o
+    (a su elección) cualquier versión posterior.
+
+    Este programa se distribuye con la esperanza de que sea útil,
+    pero SIN NINGUNA GARANTÍA; sin siquiera la garantía implícita de
+    COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulte la
+    Licencia Pública General de GNU para obtener más detalles.
+
+    Debería haber recibido una copia de la Licencia Pública General de GNU
+    junto con este programa. En caso contrario, consulte <https://www.gnu.org/licenses/>.
+-->
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="license" content="GNU General Public License v3.0 (GPL-3.0)">
+    <title>Generador Musical Espectral - Escala Hexatónica & Piano</title>
+    <!-- Librería abcjs completa (incluye módulo synth de audio) -->
+    <script src="https://cdn.jsdelivr.net/npm/abcjs@6.4.1/dist/abcjs-basic-min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/abcjs@6.4.1/abcjs-audio.css">
+    <style>
+        :root {
+		    --bg-dark: #0f172a;
+		    --card-bg: #1e293b;
+		    --text-main: #f8fafc;
+		    --text-muted: #94a3b8;
+		    --accent: #38bdf8;
+		    --border: #334155;
+		}
+		
+		* {
+		    box-sizing: border-box;
+		    margin: 0;
+		    padding: 0;
+		    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+		}
+		
+		body {
+		    background-color: var(--bg-dark);
+		    color: var(--text-main);
+		    line-height: 1.6;
+		    padding: 1rem; /* Reducido para aprovechar pantallas pequeñas (móviles) */
+		}
+		
+		@media (min-width: 768px) {
+		    body {
+		        padding: 2rem; /* Vuelve a 2rem en pantallas medianas y grandes */
+		    }
+		}
+		
+		.container {
+		    max-width: 1100px;
+		    margin: 0 auto;
+		    width: 100%;
+		}
+		
+		header {
+		    text-align: center;
+		    margin-bottom: 2rem;
+		    padding-bottom: 1rem;
+		    border-bottom: 1px solid var(--border);
+		}
+		
+		header h1 {
+		    font-size: clamp(1.5rem, 4vw, 2rem); /* Se adapta dinámicamente al ancho de la pantalla */
+		    background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7);
+		    -webkit-background-clip: text;
+		    -webkit-text-fill-color: transparent;
+		    margin-bottom: 0.5rem;
+		    word-break: break-word; /* Evita que quiebre feo en pantallas muy angostas */
+		}
+		
+		.grid {
+		    display: grid;
+		    grid-template-columns: 1fr; /* Por defecto una sola columna en móviles */
+		    gap: 1.5rem;
+		}
+		
+		@media (min-width: 850px) {
+		    .grid {
+		        grid-template-columns: 1fr 1fr; /* Dos columnas a partir de 850px */
+		        gap: 2rem;
+		    }
+		}
+		
+		.card {
+		    background: var(--card-bg);
+		    border: 1px solid var(--border);
+		    border-radius: 12px;
+		    padding: 1.25rem;
+		    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+		    word-wrap: break-word;
+		    overflow: hidden; /* Evita que hijos grandes desborden la tarjeta */
+		}
+		
+		@media (min-width: 768px) {
+		    .card {
+		        padding: 1.5rem;
+		    }
+		}
+		
+		.card h2 {
+		    font-size: 1.25rem;
+		    margin-bottom: 1rem;
+		    color: var(--accent);
+		    border-bottom: 1px solid var(--border);
+		    padding-bottom: 0.5rem;
+		}
+		
+		.form-group {
+		    margin-bottom: 1.25rem;
+		}
+		
+		label {
+		    display: block;
+		    margin-bottom: 0.4rem;
+		    font-weight: 600;
+		    font-size: 0.95rem;
+		}
+		
+		label[islabel="false"] {
+			 display: block;
+		    margin-bottom: 0.4rem;
+		}
+
+		input[type="file"],
+		textarea,
+		select {
+		    width: 100%;
+		    max-width: 100%; /* Evita que sobresalga de su contenedor */
+		    background: #0f172a;
+		    border: 1px solid var(--border);
+		    color: var(--text-main);
+		    padding: 0.75rem;
+		    border-radius: 8px;
+		    font-size: 0.95rem;
+		}
+
+		textarea {
+   		 resize: vertical;
+		    min-height: 80px;
+		}
+		
+		.btn {
+		    display: inline-block;
+		    width: 100%;
+		    background: linear-gradient(135deg, #2563eb, #0284c7);
+		    color: white;
+		    font-weight: 600;
+		    border: none;
+		    padding: 0.85rem 1.5rem;
+		    border-radius: 8px;
+		    cursor: pointer;
+		    font-size: 1rem;
+		    transition: transform 0.2s ease;
+		    margin-top: 0.5rem;
+		    text-align: center;
+		}
+		
+		.btn:hover:not(:disabled) {
+		    transform: translateY(-3px);
+		}
+		
+		.btn:active:not(:disabled) {
+			 transform: scale(1.2);
+		}
+		
+		.btn-group-row {
+		    display: grid;
+		    grid-template-columns: 1fr; /* Apilados en pantallas muy pequeñas */
+		    gap: 0.75rem;
+		    margin-top: 0.75rem;
+		}
+		
+		@media (min-width: 480px) {
+		    .btn-group-row {
+		        grid-template-columns: 1fr 1fr; /* Lado a lado si hay espacio */
+		    }
+		}
+		
+		.btn-secondary {
+		    background: #334155;
+		    margin-top: 0;
+		}
+		
+		.btn-score {
+		    background: linear-gradient(135deg, #059669, #10b981);
+		    margin-top: 0;
+		}
+		
+		.btn-audio {
+		    background: linear-gradient(135deg, #7c3aed, #9333ea);
+		    margin-top: 0.75rem;
+		}
+		
+		.btn:disabled {
+		    opacity: 0.4;
+		    cursor: not-allowed;
+		}
+		
+		.spectrum-legend {
+		    display: grid;
+		    grid-template-columns: repeat(2, 1fr); /* 2 columnas en móviles pequeños */
+		    gap: 0.5rem;
+		    margin-top: 1rem;
+		    text-align: center;
+		    font-size: 0.8rem;
+		}
+		
+		@media (min-width: 500px) {
+		    .spectrum-legend {
+		        grid-template-columns: repeat(3, 1fr);
+		    }
+		}
+		
+		@media (min-width: 768px) {
+		    .spectrum-legend {
+		        grid-template-columns: repeat(6, 1fr); /* Las 6 columnas originales en escritorio */
+		    }
+		}
+		
+		.color-pill {
+		    padding: 0.5rem 0.25rem;
+		    border-radius: 6px;
+		    font-weight: bold;
+		    color: #fff;
+		    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+		    word-break: break-word;
+		}
+		
+		#previewContainer {
+		    margin-top: 1rem;
+		    text-align: center;
+		}
+		
+		#imagePreview {
+		    max-width: 100%;
+		    height: auto;
+		    max-height: 220px;
+		    border-radius: 8px;
+		    display: none;
+		    margin: 0 auto;
+		    border: 1px solid var(--border);
+		}
+		
+		#visualCanvas {
+		    width: 100% !important;
+		    height: 150px;
+		    background: #090d16;
+		    border-radius: 8px;
+		    margin-top: 1rem;
+		    border: 1px solid var(--border);
+		    display: block;
+		}
+		
+		.output-section {
+		    margin-top: 2rem;
+		}
+		
+		.section-header-flex {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    border-bottom: 1px solid var(--border);
+		    padding-bottom: 0.5rem;
+		    margin-bottom: 1rem;
+		    flex-wrap: wrap;
+		    gap: 0.75rem;
+		}
+		
+		.section-header-flex h2 {
+		    border-bottom: none;
+		    padding-bottom: 0;
+		    margin-bottom: 0;
+		}
+		
+		.btn-inline {
+		    width: auto;
+		    padding: 0.5rem 1rem;
+		    font-size: 0.88rem;
+		    margin-top: 0;
+		}
+		
+		#audioControls {
+		    margin-bottom: 1rem;
+		    background: #0f172a;
+		    padding: 0.75rem;
+		    border-radius: 8px;
+		    border: 1px solid var(--border);
+		    min-height: 48px;
+		    overflow-x: auto; /* Previene desbordamientos si hay reproductores nativos grandes */
+		}
+		
+		#paper {
+		    background: #ffffff;
+		    color: #000000;
+		    border-radius: 8px;
+		    padding: 1rem;
+		    overflow-x: auto; /* Vital para partituras ABCjs o pentagramas que crezcan en móviles */
+		    min-height: 200px;
+		    width: 100%;
+		}
+		
+		.abcjs-highlight {
+		    fill: #ef4444 !important;
+		}
+		
+		pre#abcOutput {
+		    background: #090d16;
+		    color: #38bdf8;
+		    padding: 1rem;
+		    border-radius: 8px;
+		    overflow-x: auto; /* Permite hacer scroll horizontal si el código es muy largo */
+		    font-family: 'Fira Code', monospace;
+		    font-size: 0.85rem;
+		    margin-top: 1rem;
+		    border: 1px solid var(--border);
+		    max-width: 100%;
+		}
+		
+		footer {
+		    margin-top: 3rem;
+		    padding-top: 1.5rem;
+		    border-top: 1px solid var(--border);
+		    text-align: center;
+		    color: var(--text-muted);
+		    font-size: 0.9rem;
+		}
+		
+		footer a {
+		    color: var(--accent);
+		    text-decoration: none;
+		}
+		
+		footer a:hover {
+		    text-decoration: underline;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sonificación del Espectro Visible a Piano de Cola</h1>
+            <p style="color: var(--text-muted);">Mapeo de frecuencias ópticas (390 nm – 780 nm) a Escala Hexatónica con Síntesis WebAudio</p>
+        </header>
+
+        <div class="grid">
+            <!-- Panel de Formulario -->
+            <div class="card">
+                <h2>1. Configuración de Obra</h2>
+                <form id="musicForm">
+                    <div class="form-group">
+                        <label>Cargar Imagen (Análisis Cromático):</label>
+                        <label islabel="false" class="btn btn-score" for="imageInput">
+                        	Subir Archivo
+									<input type="file" id="imageInput" accept="image/*" style="display: none;" required>                        
+                        </label>
+                        <div id="previewContainer">
+                            <img id="imagePreview" alt="Vista previa de la imagen">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="imageDesc">Descripción / Título de la Imagen:</label>
+                        <textarea id="imageDesc" placeholder="Ej. Nebulosa de Orión en el espectro visible, estudio de luz y sombra..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="genreSelect">Género Musical (20 Géneros Puros):</label>
+                        <select id="genreSelect" required>
+                            <option value="Clásico">1. Clásico (Sonata / Nocturno)</option>
+                            <option value="Barroco">2. Barroco (Contrapunto / Invención)</option>
+                            <option value="Romanticismo">3. Romanticismo (Expresivo / Rubato)</option>
+                            <option value="Impresionismo">4. Impresionismo (Tonos enteros / Debussy)</option>
+                            <option value="Jazz">5. Jazz (Swing / Voicings extendidos)</option>
+                            <option value="Blues">6. Blues (Shuffle / Escala de Blues)</option>
+                            <option value="Ragtime">7. Ragtime (Bajo alterno / Síncopa)</option>
+                            <option value="Tango">8. Tango (Marcato / Síncopa rioplatense)</option>
+                            <option value="Vals">9. Vals (Compás ternario 3/4)</option>
+                            <option value="Flamenco">10. Flamenco (Cadencia andaluza / Rasgueo)</option>
+                            <option value="Bossa Nova">11. Bossa Nova (Patrón sincopado 2/4)</option>
+                            <option value="Salsa">12. Salsa (Montuno de piano / Clave)</option>
+                            <option value="Bolero">13. Bolero (Acompañamiento arpegiado)</option>
+                            <option value="Son Cubano">14. Son Cubano (Tumbao / Bajo anticipado)</option>
+                            <option value="Merengue">15. Merengue (Marcha rápida 2/4)</option>
+                            <option value="Cumbia">16. Cumbia (Patrón rítmico binario)</option>
+                            <option value="Polka">17. Polka (Salto binario vivo)</option>
+                            <option value="Minueto">18. Minueto (Danza cortesana 3/4)</option>
+                            <option value="Góspel">19. Góspel (Acordes plenos / Soulful)</option>
+                            <option value="Minimalismo">20. Minimalismo (Patrones repetitivos / Ostinato)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn">Generar Partitura y Sintetizar Piano</button>
+                    
+                    <div class="btn-group-row">
+                        <button type="button" id="downloadBtn" class="btn btn-secondary">Descargar .abc</button>
+                        <button type="button" id="downloadScoreBtn" class="btn btn-score">Descargar Partitura (SVG)</button>
+                    </div>
+                    <button type="button" id="downloadWavBtn" class="btn btn-audio">Descargar Archivo MIDI (.mid)</button>
+                </form>
+            </div>
+
+            <!-- Panel de Mapeo Espectral y Visualización -->
+            <div class="card">
+                <h2>2. Mapeo Espectro Visible → Escala Hexatónica</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">
+                    Cada banda del espectro visible se traduce a una nota de la <strong>escala hexatónica de tonos enteros</strong> y se sincroniza en tiempo real con el audio:
+                </p>
+
+                <div class="spectrum-legend">
+                    <div class="color-pill" style="background:#dc2626;">Rojo<br>622-780nm<br><strong>C (Do)</strong></div>
+                    <div class="color-pill" style="background:#ea580c;">Naranja<br>597-622nm<br><strong>D (Re)</strong></div>
+                    <div class="color-pill" style="background:#ca8a04;">Amarillo<br>577-597nm<br><strong>E (Mi)</strong></div>
+                    <div class="color-pill" style="background:#16a34a;">Verde<br>492-577nm<br><strong>^F (Fa#)</strong></div>
+                    <div class="color-pill" style="background:#2563eb;">Azul<br>455-492nm<br><strong>^G (Sol#)</strong></div>
+                    <div class="color-pill" style="background:#7e22ce;">Violeta<br>390-455nm<br><strong>^A (La#)</strong></div>
+                </div>
+
+                <h3 style="font-size: 1rem; margin-top: 1.5rem; color: var(--text-main);">Osciloscopio / Espectro Sincronizado</h3>
+                <canvas id="visualCanvas" width="500" height="150"></canvas>
+                <p id="statsInfo" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    Carga una imagen y presiona generar para activar el sintetizador.
+                </p>
+            </div>
+        </div>
+
+        <!-- Panel de Partitura, Reproductor y Código ABC -->
+        <div class="card output-section">
+            <div class="section-header-flex">
+                <h2>3. Reproductor y Partitura (Acoustic Grand Piano)</h2>
+                <button type="button" id="downloadScorePngBtn" class="btn btn-score btn-inline">Guardar Partitura como Imagen (PNG)</button>
+            </div>
+            <div id="audioControls">
+                <span style="color: var(--text-muted); font-size: 0.9rem;">El reproductor de Piano de Cola aparecerá aquí tras generar la obra...</span>
+            </div>
+            <div id="paper"></div>
+            <h3 style="font-size: 1rem; margin-top: 1.5rem;">Código Fuente ABC Generado:</h3>
+            <pre id="abcOutput">Esperando generación...</pre>
+        </div>
+
+        <!-- Pie de página con atribución y licencia GNU GPLv3 -->
+        <footer>
+            <p><strong>Propiedad de AMLC_70</strong></p>
+            <p style="margin-top: 0.35rem; font-size: 0.82rem;">
+                Distribuido bajo los términos de la <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">Licencia Pública General de GNU v3.0 (GNU GPLv3)</a>.
+            </p>
+        </footer>
+    </div>
+
+    <!-- Script lógico independiente con motor WebAudio + ABCJS Synth -->
+    <script src="espectro_piano.js"></script>
+</body>
+</html>
